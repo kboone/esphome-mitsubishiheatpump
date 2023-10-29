@@ -401,6 +401,7 @@ void MitsubishiHeatPump::hpStatusChanged(heatpumpStatus currentStatus) {
             break;
         default:
             // Ignore off signals
+            break;
             // this->action = climate::CLIMATE_ACTION_OFF;
     }
 

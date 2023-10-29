@@ -18,6 +18,7 @@
  */
 
 #include "espmhp.h"
+#include <math.h>
 using namespace esphome;
 
 /**
@@ -366,7 +367,6 @@ void MitsubishiHeatPump::hpStatusChanged(heatpumpStatus currentStatus) {
                 this->action = climate::CLIMATE_ACTION_HEATING;
             }
             else {
-                hp->setPowerSetting("OFF");
                 this->action = climate::CLIMATE_ACTION_IDLE;
             }
             break;
@@ -412,9 +412,15 @@ void MitsubishiHeatPump::set_remote_temperature(float temp) {
     ESP_LOGD(TAG, "Setting remote temp: %.1f", temp);
     this->hp->setRemoteTemperature(temp);
 
-    if (this->mode == climate::CLIMATE_MODE_HEAT && heat_setpoint.has_value() && temp < heat_setpoint.value()) {
-        hp->setModeSetting("HEAT");
-        hp->setPowerSetting("ON");
+    float round_temp = round(temp * 2) / 2;
+
+    if (this->mode == climate::CLIMATE_MODE_HEAT && heat_setpoint.has_value()) {
+        if (round_temp > heat_setpoint.value() + 0.4) {
+            hp->setPowerSetting("OFF");
+        } else if (temp < heat_setpoint.value() - 0.4) {
+            hp->setModeSetting("HEAT");
+            hp->setPowerSetting("ON");
+        }
     }
 }
 

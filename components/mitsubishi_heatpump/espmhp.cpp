@@ -19,6 +19,7 @@
  */
 
 #include "espmhp.h"
+#include <math.h>
 using namespace esphome;
 
 /**
@@ -463,10 +464,13 @@ void MitsubishiHeatPump::hpSettingsChanged() {
                     currentSettings.mode
             );
         }
-    } else {
+    } /*
+    // ignore off signals
+    else {
         this->mode = climate::CLIMATE_MODE_OFF;
         this->action = climate::CLIMATE_ACTION_OFF;
     }
+    */
 
     ESP_LOGI(TAG, "Climate mode is: %i", this->mode);
 
@@ -556,7 +560,6 @@ void MitsubishiHeatPump::hpSettingsChanged() {
  * Report changes in the current temperature sensed by the HeatPump.
  */
 void MitsubishiHeatPump::hpStatusChanged(heatpumpStatus currentStatus) {
-    this->current_temperature = currentStatus.roomTemperature;
     switch (this->mode) {
         case climate::CLIMATE_MODE_HEAT:
             if (currentStatus.operating) {
@@ -577,9 +580,9 @@ void MitsubishiHeatPump::hpStatusChanged(heatpumpStatus currentStatus) {
         case climate::CLIMATE_MODE_HEAT_COOL:
             this->action = climate::CLIMATE_ACTION_IDLE;
             if (currentStatus.operating) {
-              if (this->current_temperature > this->target_temperature) {
+              if (currentStatus.roomTemperature > this->target_temperature) {
                   this->action = climate::CLIMATE_ACTION_COOLING;
-              } else if (this->current_temperature < this->target_temperature) {
+              } else if (currentStatus.roomTemperature < this->target_temperature) {
                   this->action = climate::CLIMATE_ACTION_HEATING;
               }
             }
@@ -596,7 +599,9 @@ void MitsubishiHeatPump::hpStatusChanged(heatpumpStatus currentStatus) {
             this->action = climate::CLIMATE_ACTION_FAN;
             break;
         default:
-            this->action = climate::CLIMATE_ACTION_OFF;
+            // Ignore off signals
+            break;
+            // this->action = climate::CLIMATE_ACTION_OFF;
     }
 
     this->operating_ = currentStatus.operating;
@@ -614,6 +619,43 @@ void MitsubishiHeatPump::set_remote_temperature(float temp) {
     }
 
     this->hp->setRemoteTemperature(temp);
+    if (this->current_temperature != temp) {
+        this->current_temperature = temp;
+        this->publish_state();
+    }
+
+    float round_temp = round(temp * 2) / 2;
+    bool power_on = hp->getPowerSettingBool();
+    const char* current_mode = hp->getModeSetting();
+
+    bool updated = false;
+
+    if (this->mode == climate::CLIMATE_MODE_HEAT && heat_setpoint.has_value()) {
+        if ((power_on || strcmp(current_mode, "OFF") != 0)
+            && round_temp >= heat_setpoint.value() + 0.4) {
+            hp->setPowerSetting("OFF");
+            this->action = climate::CLIMATE_ACTION_IDLE;
+            updated = true;
+        } else if ((!power_on || strcmp(current_mode, "HEAT") != 0) 
+                   && round_temp <= heat_setpoint.value() - 0.4) {
+            hp->setModeSetting("HEAT");
+            hp->setPowerSetting("ON");
+            this->action = climate::CLIMATE_ACTION_HEATING;
+            updated = true;
+        } else if (!power_on && strcmp(current_mode, "HEAT") == 0 &&
+                   round_temp >= heat_setpoint.value() - 0.1) {
+            hp->setPowerSetting("OFF");
+            this->action = climate::CLIMATE_ACTION_IDLE;
+            updated = true;
+        }
+    }
+
+    if (updated) {
+        ESP_LOGD(TAG, "Setting internal mode to %s - %s", hp->getModeSetting(),
+                 hp->getPowerSetting());
+        hp->update();
+        this->publish_state();
+    }
 }
 
 void MitsubishiHeatPump::ping() {

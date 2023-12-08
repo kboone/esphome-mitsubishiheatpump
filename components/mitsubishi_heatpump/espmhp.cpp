@@ -464,13 +464,12 @@ void MitsubishiHeatPump::hpSettingsChanged() {
                     currentSettings.mode
             );
         }
-    } /*
-    // ignore off signals
-    else {
-        this->mode = climate::CLIMATE_MODE_OFF;
-        this->action = climate::CLIMATE_ACTION_OFF;
+    } else {
+        // treat off as heat.
+        // TODO fix in summer when I want cooling...
+        this->mode = climate::CLIMATE_MODE_HEAT;
+        this->action = climate::CLIMATE_ACTION_IDLE;
     }
-    */
 
     ESP_LOGI(TAG, "Climate mode is: %i", this->mode);
 

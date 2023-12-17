@@ -636,7 +636,7 @@ void MitsubishiHeatPump::set_remote_temperature(float temp) {
                 this->action = climate::CLIMATE_ACTION_IDLE;
                 updated = true;
             } else if ((!power_on || strcmp(current_mode, "HEAT") != 0) 
-                    && round_temp < heat_setpoint.value()) {
+                    && temp < heat_setpoint.value()) {
                 hp->setModeSetting("HEAT");
                 hp->setPowerSetting("ON");
                 this->action = climate::CLIMATE_ACTION_HEATING;

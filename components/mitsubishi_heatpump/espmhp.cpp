@@ -617,7 +617,6 @@ void MitsubishiHeatPump::set_remote_temperature(float temp) {
         last_remote_temperature_sensor_update_.reset();
     }
 
-    float round_temp = round(temp * 2) / 2;
     bool power_on = hp->getPowerSettingBool();
     const char* current_mode = hp->getModeSetting();
 
@@ -632,20 +631,15 @@ void MitsubishiHeatPump::set_remote_temperature(float temp) {
 
         if (this->mode == climate::CLIMATE_MODE_HEAT && heat_setpoint.has_value()) {
             if ((power_on || strcmp(current_mode, "OFF") != 0)
-                && round_temp >= heat_setpoint.value() + 0.4) {
+                && temp > heat_setpoint.value() + 0.5) {
                 hp->setPowerSetting("OFF");
                 this->action = climate::CLIMATE_ACTION_IDLE;
                 updated = true;
             } else if ((!power_on || strcmp(current_mode, "HEAT") != 0) 
-                    && round_temp <= heat_setpoint.value() - 0.4) {
+                    && round_temp < heat_setpoint.value()) {
                 hp->setModeSetting("HEAT");
                 hp->setPowerSetting("ON");
                 this->action = climate::CLIMATE_ACTION_HEATING;
-                updated = true;
-            } else if (!power_on && strcmp(current_mode, "HEAT") == 0 &&
-                    round_temp >= heat_setpoint.value() - 0.1) {
-                hp->setPowerSetting("OFF");
-                this->action = climate::CLIMATE_ACTION_IDLE;
                 updated = true;
             }
         }

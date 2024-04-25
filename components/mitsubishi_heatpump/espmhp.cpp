@@ -630,6 +630,7 @@ void MitsubishiHeatPump::set_remote_temperature(float temp) {
         }
 
         if (this->mode == climate::CLIMATE_MODE_HEAT && heat_setpoint.has_value()) {
+            ESP_LOGD(TAG, "Debug temp mode: %d - %s - %.1f - %.1f", power_on, current_mode, temp, heat_setpoint.value());
             if ((power_on || strcmp(current_mode, "OFF") != 0)
                 && temp > heat_setpoint.value() + 0.7) {
                 hp->setPowerSetting("OFF");

@@ -270,6 +270,8 @@ void MitsubishiHeatPump::control(const climate::ClimateCall &call) {
             }
             break;
         case climate::CLIMATE_MODE_HEAT:
+            // will be updated in set_remote_temp
+            /*
             hp->setModeSetting("HEAT");
             hp->setPowerSetting("ON");
             if (has_mode){
@@ -280,6 +282,7 @@ void MitsubishiHeatPump::control(const climate::ClimateCall &call) {
                 this->action = climate::CLIMATE_ACTION_IDLE;
                 updated = true;
             }
+            */
             break;
         case climate::CLIMATE_MODE_DRY:
             hp->setModeSetting("DRY");
@@ -630,9 +633,9 @@ void MitsubishiHeatPump::set_remote_temperature(float temp) {
         }
 
         if (this->mode == climate::CLIMATE_MODE_HEAT && heat_setpoint.has_value()) {
-            ESP_LOGD(TAG, "Debug temp mode: %d - %s - %.1f - %.1f", power_on, current_mode, temp, heat_setpoint.value());
-            if ((power_on || strcmp(current_mode, "OFF") != 0)
+            if ((power_on || strcmp(current_mode, "HEAT") != 0)
                 && temp > heat_setpoint.value() + 0.7) {
+                hp->setModeSetting("HEAT");
                 hp->setPowerSetting("OFF");
                 this->action = climate::CLIMATE_ACTION_IDLE;
                 updated = true;

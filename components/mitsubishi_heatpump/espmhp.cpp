@@ -624,6 +624,7 @@ void MitsubishiHeatPump::set_remote_temperature(float temp) {
 
     if (temp > 0) {
         if (this->current_temperature != temp) {
+            this->hp->setRemoteTemperature(temp);
             this->current_temperature = temp;
             this->publish_state();
         }
@@ -641,10 +642,6 @@ void MitsubishiHeatPump::set_remote_temperature(float temp) {
                 this->action = climate::CLIMATE_ACTION_HEATING;
                 updated = true;
             }
-        }
-
-        if (this->hp->getPowerSettingBool()) {
-            this->hp->setRemoteTemperature(temp);
         }
     } else {
         // Lost connection. Reset to heatpump internal control.

@@ -274,7 +274,8 @@ void MitsubishiHeatPump::control(const climate::ClimateCall &call) {
             /*
             hp->setModeSetting("HEAT");
             hp->setPowerSetting("ON");
-            if (has_mode){
+            */
+            if (has_mode) {
                 if (heat_setpoint.has_value() && !has_temp) {
                     hp->setTemperature(heat_setpoint.value());
                     this->target_temperature = heat_setpoint.value();
@@ -282,7 +283,6 @@ void MitsubishiHeatPump::control(const climate::ClimateCall &call) {
                 this->action = climate::CLIMATE_ACTION_IDLE;
                 updated = true;
             }
-            */
             break;
         case climate::CLIMATE_MODE_DRY:
             hp->setModeSetting("DRY");

@@ -270,12 +270,8 @@ void MitsubishiHeatPump::control(const climate::ClimateCall &call) {
             }
             break;
         case climate::CLIMATE_MODE_HEAT:
-            if (has_temp) {
-                // only set mode if the temperature was changed to force an update.
-                // otherwise this will be updated in set_remote_temp
-                hp->setModeSetting("HEAT");
-                hp->setPowerSetting("ON");
-            }
+            // only set mode. this will actually be turned on/off in set_remote_temp
+            hp->setModeSetting("HEAT");
             if (has_mode) {
                 if (heat_setpoint.has_value() && !has_temp) {
                     hp->setTemperature(heat_setpoint.value());

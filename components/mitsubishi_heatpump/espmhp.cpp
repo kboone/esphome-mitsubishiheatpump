@@ -270,14 +270,17 @@ void MitsubishiHeatPump::control(const climate::ClimateCall &call) {
             }
             break;
         case climate::CLIMATE_MODE_HEAT:
-            // only set mode. this will actually be turned on/off in set_remote_temp
-            hp->setModeSetting("HEAT");
+            if ((hp->getModeSetting(), "HEAT") != 0) {
+                // only set mode. this will actually be turned on/off in set_remote_temp
+                hp->setModeSetting("HEAT");
+                this->action = climate::CLIMATE_ACTION_IDLE;
+            }
             if (has_mode) {
                 if (heat_setpoint.has_value() && !has_temp) {
                     hp->setTemperature(heat_setpoint.value());
                     this->target_temperature = heat_setpoint.value();
+                    this->action = climate::CLIMATE_ACTION_IDLE;
                 }
-                this->action = climate::CLIMATE_ACTION_IDLE;
                 updated = true;
             }
             break;

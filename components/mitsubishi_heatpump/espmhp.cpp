@@ -257,15 +257,17 @@ void MitsubishiHeatPump::control(const climate::ClimateCall &call) {
 
     switch (this->mode) {
         case climate::CLIMATE_MODE_COOL:
-            hp->setModeSetting("COOL");
-            hp->setPowerSetting("ON");
-
-            if (has_mode){
-                if (cool_setpoint.has_value() && !has_temp) {
+            if ((hp->getModeSetting(), "COOL") != 0) {
+                // only set mode. this will actually be turned on/off in set_remote_temp
+                hp->setModeSetting("COOL");
+                this->action = climate::CLIMATE_ACTION_IDLE;
+            }
+            if (has_mode) {
+                if (heat_setpoint.has_value() && !has_temp) {
                     hp->setTemperature(cool_setpoint.value());
                     this->target_temperature = cool_setpoint.value();
+                    this->action = climate::CLIMATE_ACTION_IDLE;
                 }
-                this->action = climate::CLIMATE_ACTION_IDLE;
                 updated = true;
             }
             break;
@@ -468,9 +470,8 @@ void MitsubishiHeatPump::hpSettingsChanged() {
             );
         }
     } else {
-        // treat off as heat.
-        // TODO fix in summer when I want cooling...
-        this->mode = climate::CLIMATE_MODE_HEAT;
+        // TODO: just set action idle for off? Let's see if this works.
+        //this->mode = climate::CLIMATE_MODE_HEAT;
         this->action = climate::CLIMATE_ACTION_IDLE;
     }
 
@@ -647,6 +648,21 @@ void MitsubishiHeatPump::set_remote_temperature(float temp) {
                 updated = true;
             }
         }
+        if (this->mode == climate::CLIMATE_MODE_COOL && cool_setpoint.has_value()) {
+            if ((power_on || strcmp(current_mode, "COOL") != 0)
+                && temp < cool_setpoint.value() - 0.7) {
+                hp->setModeSetting("COOL");
+                hp->setPowerSetting("OFF");
+                this->action = climate::CLIMATE_ACTION_IDLE;
+                updated = true;
+            } else if ((!power_on || strcmp(current_mode, "COOL") != 0) 
+                    && temp > cool_setpoint.value()) {
+                hp->setModeSetting("COOL");
+                hp->setPowerSetting("ON");
+                this->action = climate::CLIMATE_ACTION_COOLING;
+                updated = true;
+            }
+        }
     } else {
         // Lost connection. Reset to heatpump internal control.
         ESP_LOGW(
@@ -661,6 +677,13 @@ void MitsubishiHeatPump::set_remote_temperature(float temp) {
             hp->setModeSetting("HEAT");
             hp->setPowerSetting("ON");
             this->action = climate::CLIMATE_ACTION_HEATING;
+            updated = true;
+        }
+        if (this->mode == climate::CLIMATE_MODE_COOL
+                && (!power_on || strcmp(current_mode, "COOL") != 0)) {
+            hp->setModeSetting("COOL");
+            hp->setPowerSetting("ON");
+            this->action = climate::CLIMATE_ACTION_COOLING;
             updated = true;
         }
     }

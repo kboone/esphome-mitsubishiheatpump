@@ -329,6 +329,7 @@ void MitsubishiHeatPump::control(const climate::ClimateCall &call) {
             "control", "Sending target temp: %.1f",
             *call.get_target_temperature()
         );
+        hp->setPowerSetting("ON");
         hp->setTemperature(*call.get_target_temperature());
         this->target_temperature = *call.get_target_temperature();
         updated = true;

@@ -257,6 +257,7 @@ void MitsubishiHeatPump::control(const climate::ClimateCall &call) {
 
     switch (this->mode) {
         case climate::CLIMATE_MODE_COOL:
+            ESP_LOGD(TAG, "current mode: %s - %s", hp->getModeSetting(), YESNO((hp->getModeSetting(), "COOL") != 0));
             if ((hp->getModeSetting(), "COOL") != 0) {
                 // only set mode. this will actually be turned on/off in set_remote_temp
                 hp->setModeSetting("COOL");
